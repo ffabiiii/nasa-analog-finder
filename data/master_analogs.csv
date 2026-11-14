@@ -1,0 +1,16 @@
+site_id,site_name,country,category,lat,lon,primary_geology,best_analog_for,temp_max_c,temp_min_c,diurnal_temp_range_c,precip_mm_day,solar_rad_kwh_m2,aridity_ice_index,slope_deg,sar_roughness_index,basalt_oxide_index
+CTRL_01,Desierto de Atacama (Sector Yungay),Chile,Control,-24.0833,-69.9167,Hiperárido con nitratos y percloratos,Marte (Jezero),32.93,-0.64,33.57,0.02,7.2058,0.996,0.06,0.002,0.547
+CTRL_02,Cráter Haughton (Isla Devon),Canadá,Control,75.3833,-89.6667,Cráter de impacto polar y permafrost,Luna (Shackleton) / Marte,16.81,-48.55,65.36,0.85,2.3155,0.83,2.25,0.158,0.058
+CTRL_03,Mauna Kea (Zona Alpina Volcánica),Estados Unidos,Control,19.8207,-155.4681,Tefra basáltica y regolito volcánico,Luna / Marte,28.67,12.75,15.92,4.41,5.28,0.118,13.39,1.0,0.767
+CTRL_04,Valles Secos de McMurdo (Valle Taylor),Antártida,Control,-77.6167,162.95,Desierto frío hiperárido con permafrost,Luna (Shackleton) / Marte (Arcadia),-0.19,-47.14,46.95,0.18,2.9993,0.964,4.65,0.323,0.037
+DISC_01,Pampa de la Joya (Arequipa),Perú,Discovery,-16.7833,-71.85,Suelo hiperárido con percloratos y biomasa mínima,Marte (Jezero),26.82,9.43,17.39,0.22,6.629,0.956,0.55,0.037,0.65
+DISC_02,Valle de los Volcanes de Andahua (Cono Chilcayoc),Perú,Discovery,-15.5244,-72.3264,Conos de escoria basáltica y tubos de lava,Luna / Marte (Hábitats subterráneos),21.66,-3.53,25.19,0.67,6.2669,0.866,4.1,0.277,0.572
+DISC_03,Meseta de Parinacochas (Ayacucho),Perú,Discovery,-14.6917,-74.3667,Altiplano árido de alta radiación UV y oscilación térmica,Marte (Jezero),23.55,-3.61,27.16,0.8,6.1788,0.84,4.92,0.323,0.746
+DISC_04,Salar de Uyuni (Planicie Central),Bolivia,Discovery,-20.1338,-67.4891,Planicie ultraplana (<1°) con costras de sulfatos,Marte (Arcadia Planitia),25.07,-14.47,39.54,0.91,5.6482,0.818,0.0,0.0,0.122
+DISC_05,Cráter Lonar (Borde de Impacto),India,Discovery,19.9758,76.5136,Cráter de impacto hiperveloz en roca basáltica,Luna / Marte (Cráteres de impacto),45.55,6.08,39.47,2.31,5.3366,0.538,4.48,0.284,0.469
+DISC_06,Isla Axel Heiberg (Expedition Fiord),Canadá,Discovery,79.4167,-90.75,Permafrost continuo y manantiales hipersalinos fríos,Marte (Arcadia Planitia),11.39,-50.46,61.85,0.82,2.5373,0.836,4.68,0.316,0.06
+DISC_07,Campo Volcánico de Tolbachik (Kamchatka),Rusia,Discovery,55.83,160.33,Coladas basálticas recientes y cuevas lávicas,Luna (Base subterránea),25.42,-39.97,65.39,5.19,2.7456,0.0,35.05,1.0,0.102
+DISC_08,Desierto de Lut (Gandom Beryan),Irán,Discovery,30.4833,59.1667,Extremo térmico y erosión eólica (yardangs),Marte (Procesos eólicos),48.54,-5.45,53.99,0.19,5.9496,0.962,1.29,0.084,0.584
+DISC_09,Depresión de Danakil (Dallol),Etiopía,Discovery,14.2417,40.3,Sistemas hidrotermales ácidos ricos en hierro y azufre,Marte (Jezero primitivo),40.27,11.26,29.01,1.23,5.957,0.754,0.17,0.007,0.96
+DISC_10,Campo Volcánico de El Pinacate (Sonora),México,Discovery,31.7722,-113.4981,Cráteres maar basálticos y dunas áridas,Luna / Marte,48.47,-3.73,52.2,0.38,6.006,0.924,18.48,1.0,0.619
+DISC_11,Meseta de Ennedi (Borkou),Chad,Discovery,17.15,21.8,Abrasión eólica intensa sobre lecho rocoso árido,Marte (Erosión superficial),43.89,1.95,41.94,0.23,6.7582,0.954,2.51,0.146,1.0
