@@ -4,10 +4,10 @@ CTRL_02,Cráter Haughton (Isla Devon),Canadá,Control,75.3833,-89.6667,Cráter d
 CTRL_03,Mauna Kea (Zona Alpina Volcánica),Estados Unidos,Control,19.8207,-155.4681,Tefra basáltica y regolito volcánico,Luna / Marte
 CTRL_04,Valles Secos de McMurdo (Valle Taylor),Antártida,Control,-77.6167,162.9500,Desierto frío hiperárido con permafrost,Luna (Shackleton) / Marte (Arcadia)
 DISC_01,Pampa de la Joya (Arequipa),Perú,Discovery,-16.7833,-71.8500,Suelo hiperárido con percloratos y biomasa mínima,Marte (Jezero)
-DISC_02,Valle de los Volcanes de Andahua (Arequipa),Perú,Discovery,-15.4917,-72.3417,Conos de escoria basáltica y tubos de lava,Luna / Marte (Hábitats subterráneos)
+DISC_02,Valle de los Volcanes de Andahua (Cono Chilcayoc),Perú,Discovery,-15.5244,-72.3264,Conos de escoria basáltica y tubos de lava,Luna / Marte (Hábitats subterráneos)
 DISC_03,Meseta de Parinacochas (Ayacucho),Perú,Discovery,-14.6917,-74.3667,Altiplano árido de alta radiación UV y oscilación térmica,Marte (Jezero)
-DISC_04,Salar de Uyuni (Borde Volcánico Tunupa),Bolivia,Discovery,-19.8333,-67.6333,Planicie ultraplana (<1°) con costras de sulfatos,Marte (Arcadia Planitia)
-DISC_05,Cráter Lonar (Maharashtra),India,Discovery,19.9758,76.5069,Cráter de impacto hiperveloz en roca basáltica,Luna / Marte (Cráteres de impacto)
+DISC_04,Salar de Uyuni (Planicie Central),Bolivia,Discovery,-20.1338,-67.4891,Planicie ultraplana (<1°) con costras de sulfatos,Marte (Arcadia Planitia)
+DISC_05,Cráter Lonar (Borde de Impacto),India,Discovery,19.9758,76.5136,Cráter de impacto hiperveloz en roca basáltica,Luna / Marte (Cráteres de impacto)
 DISC_06,Isla Axel Heiberg (Expedition Fiord),Canadá,Discovery,79.4167,-90.7500,Permafrost continuo y manantiales hipersalinos fríos,Marte (Arcadia Planitia)
 DISC_07,Campo Volcánico de Tolbachik (Kamchatka),Rusia,Discovery,55.8300,160.3300,Coladas basálticas recientes y cuevas lávicas,Luna (Base subterránea)
 DISC_08,Desierto de Lut (Gandom Beryan),Irán,Discovery,30.4833,59.1667,Extremo térmico y erosión eólica (yardangs),Marte (Procesos eólicos)
