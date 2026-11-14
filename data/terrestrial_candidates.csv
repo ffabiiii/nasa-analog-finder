@@ -1,0 +1,16 @@
+site_id,site_name,country,category,lat,lon,primary_geology,best_analog_for
+CTRL_01,Desierto de Atacama (Sector Yungay),Chile,Control,-24.0833,-69.9167,Hiperárido con nitratos y percloratos,Marte (Jezero)
+CTRL_02,Cráter Haughton (Isla Devon),Canadá,Control,75.3833,-89.6667,Cráter de impacto polar y permafrost,Luna (Shackleton) / Marte
+CTRL_03,Mauna Kea (Zona Alpina Volcánica),Estados Unidos,Control,19.8207,-155.4681,Tefra basáltica y regolito volcánico,Luna / Marte
+CTRL_04,Valles Secos de McMurdo (Valle Taylor),Antártida,Control,-77.6167,162.9500,Desierto frío hiperárido con permafrost,Luna (Shackleton) / Marte (Arcadia)
+DISC_01,Pampa de la Joya (Arequipa),Perú,Discovery,-16.7833,-71.8500,Suelo hiperárido con percloratos y biomasa mínima,Marte (Jezero)
+DISC_02,Valle de los Volcanes de Andahua (Arequipa),Perú,Discovery,-15.4917,-72.3417,Conos de escoria basáltica y tubos de lava,Luna / Marte (Hábitats subterráneos)
+DISC_03,Meseta de Parinacochas (Ayacucho),Perú,Discovery,-14.6917,-74.3667,Altiplano árido de alta radiación UV y oscilación térmica,Marte (Jezero)
+DISC_04,Salar de Uyuni (Borde Volcánico Tunupa),Bolivia,Discovery,-19.8333,-67.6333,Planicie ultraplana (<1°) con costras de sulfatos,Marte (Arcadia Planitia)
+DISC_05,Cráter Lonar (Maharashtra),India,Discovery,19.9758,76.5069,Cráter de impacto hiperveloz en roca basáltica,Luna / Marte (Cráteres de impacto)
+DISC_06,Isla Axel Heiberg (Expedition Fiord),Canadá,Discovery,79.4167,-90.7500,Permafrost continuo y manantiales hipersalinos fríos,Marte (Arcadia Planitia)
+DISC_07,Campo Volcánico de Tolbachik (Kamchatka),Rusia,Discovery,55.8300,160.3300,Coladas basálticas recientes y cuevas lávicas,Luna (Base subterránea)
+DISC_08,Desierto de Lut (Gandom Beryan),Irán,Discovery,30.4833,59.1667,Extremo térmico y erosión eólica (yardangs),Marte (Procesos eólicos)
+DISC_09,Depresión de Danakil (Dallol),Etiopía,Discovery,14.2417,40.3000,Sistemas hidrotermales ácidos ricos en hierro y azufre,Marte (Jezero primitivo)
+DISC_10,Campo Volcánico de El Pinacate (Sonora),México,Discovery,31.7722,-113.4981,Cráteres maar basálticos y dunas áridas,Luna / Marte
+DISC_11,Meseta de Ennedi (Borkou),Chad,Discovery,17.1500,21.8000,Abrasión eólica intensa sobre lecho rocoso árido,Marte (Erosión superficial)
