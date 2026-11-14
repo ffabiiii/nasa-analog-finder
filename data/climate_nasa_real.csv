@@ -1,0 +1,16 @@
+site_id,site_name,lat,lon,temp_max_c,temp_min_c,diurnal_temp_range_c,precip_mm_day,solar_rad_kwh_m2,aridity_ice_index
+CTRL_01,Desierto de Atacama (Sector Yungay),-24.0833,-69.9167,32.93,-0.64,33.57,0.02,7.2058,0.996
+CTRL_02,Cráter Haughton (Isla Devon),75.3833,-89.6667,16.81,-48.55,65.36,0.85,2.3155,0.83
+CTRL_03,Mauna Kea (Zona Alpina Volcánica),19.8207,-155.4681,28.67,12.75,15.92,4.41,5.28,0.118
+CTRL_04,Valles Secos de McMurdo (Valle Taylor),-77.6167,162.95,-0.19,-47.14,46.95,0.18,2.9993,0.964
+DISC_01,Pampa de la Joya (Arequipa),-16.7833,-71.85,26.82,9.43,17.39,0.22,6.629,0.956
+DISC_02,Valle de los Volcanes de Andahua (Arequipa),-15.4917,-72.3417,21.66,-3.53,25.19,0.67,6.2669,0.866
+DISC_03,Meseta de Parinacochas (Ayacucho),-14.6917,-74.3667,23.55,-3.61,27.16,0.8,6.1788,0.84
+DISC_04,Salar de Uyuni (Borde Volcánico Tunupa),-19.8333,-67.6333,25.07,-14.47,39.54,0.91,6.4562,0.818
+DISC_05,Cráter Lonar (Maharashtra),19.9758,76.5069,45.55,6.08,39.47,2.31,5.3366,0.538
+DISC_06,Isla Axel Heiberg (Expedition Fiord),79.4167,-90.75,11.39,-50.46,61.85,0.82,2.5373,0.836
+DISC_07,Campo Volcánico de Tolbachik (Kamchatka),55.83,160.33,25.42,-39.97,65.39,5.19,2.7456,0.0
+DISC_08,Desierto de Lut (Gandom Beryan),30.4833,59.1667,48.54,-5.45,53.99,0.19,5.9496,0.962
+DISC_09,Depresión de Danakil (Dallol),14.2417,40.3,40.27,11.26,29.01,1.23,5.957,0.754
+DISC_10,Campo Volcánico de El Pinacate (Sonora),31.7722,-113.4981,48.47,-3.73,52.2,0.38,6.006,0.924
+DISC_11,Meseta de Ennedi (Borkou),17.15,21.8,43.89,1.95,41.94,0.23,6.7582,0.954
