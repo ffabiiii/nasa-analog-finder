@@ -2,9 +2,9 @@
   "targets": [
     {
       "target_id": "moon_shackleton_rim",
-      "name": "Borde del Cráter Shackleton (Polo Sur Lunar)",
+      "name": "Shackleton Crater Rim (Lunar South Pole)",
       "body": "Moon",
-      "mission_focus": "Base Lunar Permanente (Programa Artemis) - Iluminación y Hielo",
+      "mission_focus": "Permanent Lunar Base (Artemis Program) - Illumination & Water Ice",
       "official_nasa_sources": [
         "NASA LRO Diviner Lunar Radiometer (pds-geosciences.wustl.edu/missions/lro/diviner.htm)",
         "NASA LRO LOLA & Mini-RF (pds-geosciences.wustl.edu/missions/lro/)"
@@ -24,21 +24,21 @@
         "sar_roughness_index": 1.3
       },
       "engineering_applications": [
-        "Pruebas de paneles solares verticales en condiciones de iluminación rasante polar (LRO LROC/LOLA).",
-        "Validación de perforación criogénica y extracción de hielo de agua en regolito frío (LRO Diviner/LEND).",
-        "Navegación autónoma de rovers en terrenos con alto contraste de sombras y rugosidad radar (LRO Mini-RF)."
+        "Vertical solar array testing under low-angle polar grazing illumination (LRO LROC/LOLA).",
+        "Cryogenic drilling and water-ice extraction (ISRU) validation in cold regolith (LRO Diviner/LEND).",
+        "Autonomous rover navigation across high-contrast shadow boundaries and rough terrain (LRO Mini-RF)."
       ],
       "analogy_breakdowns": [
-        "Gravedad lunar (1.62 m/s² vs. 9.81 m/s² en la Tierra): altera la tracción de ruedas y la mecánica de excavación.",
-        "Vacío ultraalto (10⁻¹² torr) y ausencia total de atmósfera o erosión eólica.",
-        "Exposición directa a radiación cósmica galáctica y viento solar sin magnetósfera."
+        "Lunar gravity (1.62 m/s² vs. 9.81 m/s² on Earth): alters wheel traction and excavation mechanics.",
+        "Ultra-high vacuum (10⁻¹² torr) and complete absence of atmosphere or wind erosion.",
+        "Direct exposure to galactic cosmic rays and solar wind without a global magnetosphere."
       ]
     },
     {
       "target_id": "mars_jezero_crater",
-      "name": "Cráter Jezero (Marte)",
+      "name": "Jezero Crater (Mars)",
       "body": "Mars",
-      "mission_focus": "Exploración Astrobiológica y Retorno de Muestras (Perseverance)",
+      "mission_focus": "Astrobiological Exploration & Sample Return (Perseverance)",
       "official_nasa_sources": [
         "NASA Planetary Data System - MRO CRISM, HiRISE & MOLA (pds.nasa.gov)",
         "NASA Mars Odyssey THEMIS Thermal Infrared (pds.nasa.gov)"
@@ -58,21 +58,21 @@
         "sar_roughness_index": 1.1
       },
       "engineering_applications": [
-        "Calibración de espectrómetros y sensores de biofirmas en suelos hiperáridos ricos en sulfatos y arcillas.",
-        "Pruebas de sellado hermético frente a polvo fino rico en óxidos de hierro y percloratos.",
-        "Simulación de travesías de rovers sobre abanicos deltaicos y lechos lacustres antiguos."
+        "Calibration of spectrometers and biosignature sensors in hyper-arid sulfate and clay soils.",
+        "Hermetic dust-seal testing against fine iron-oxide and perchlorate-bearing particulates.",
+        "Rover traverse simulations across ancient lacustrine deltaic fans."
       ],
       "analogy_breakdowns": [
-        "Gravedad marciana (3.72 m/s², ~38% de la terrestre).",
-        "Atmósfera tenue de CO₂ (~6.1 hPa frente a 1013 hPa terrestres): no permite probar paracaídas ni rotores sin cámaras de vacío.",
-        "Temperatura media global de -63 °C no reproducible de forma continua en desiertos cálidos."
+        "Martian gravity (3.72 m/s², ~38% of Earth's gravity).",
+        "Thin CO₂ atmosphere (~6.1 hPa vs. 1013 hPa on Earth): parachutes and rotors require vacuum chambers.",
+        "Mean global temperature of -63 °C cannot be sustained continuously in warm terrestrial deserts."
       ]
     },
     {
       "target_id": "mars_arcadia_planitia",
-      "name": "Arcadia Planitia (Marte)",
+      "name": "Arcadia Planitia (Mars)",
       "body": "Mars",
-      "mission_focus": "Aterrizaje Humano Futuro y Minería de Hielo Subsuperficial",
+      "mission_focus": "Future Human Landing Site & Subsurface Ice Mining",
       "official_nasa_sources": [
         "NASA Planetary Data System - MRO SHARAD Subsurface Radar & MOLA (pds.nasa.gov)"
       ],
@@ -91,14 +91,14 @@
         "sar_roughness_index": 1.5
       },
       "engineering_applications": [
-        "Validación de radares de penetración terrestre (GPR / SAR) para mapear capas de hielo bajo regolito seco.",
-        "Pruebas de módulos de descenso vertical y despliegue de hábitats en planicies de pendiente mínima.",
-        "Operación de sistemas automatizados de derretimiento y purificación de agua subsuperficial."
+        "Ground-penetrating radar (GPR / SAR) validation for mapping shallow subsurface water-ice sheets.",
+        "Vertical descent lander and habitat deployment testing on ultra-low-slope plains.",
+        "Automated subsurface ice-melting and water purification system operations."
       ],
       "analogy_breakdowns": [
-        "Presión atmosférica cercana al punto triple del agua (sublimación directa del hielo al exponerse).",
-        "Tormentas de polvo globales con cargas electrostáticas distintas a las terrestres.",
-        "Gravedad reducida y mayor flujo de radiación UV-C en superficie."
+        "Atmospheric pressure near the triple point of water causes direct ice sublimation upon exposure.",
+        "Global dust storms with electrostatic charging profiles distinct from terrestrial storms.",
+        "Reduced gravity and elevated surface UV-C radiation flux."
       ]
     }
   ]

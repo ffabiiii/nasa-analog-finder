@@ -1,106 +1,168 @@
-import streamlit as st
+import json
+from pathlib import Path
 import pandas as pd
+import streamlit as st
 import folium
 from streamlit_folium import st_folium
 import plotly.graph_objects as go
 import plotly.express as px
 
 from engine.similarity_model import (
-    FEATURES,
-    FEATURE_LABELS,
-    load_datasets,
-    normalize_vector,
+    FEATURE_KEYS,
+    FEATURE_LABELS_EN,
+    normalize_value,
     compute_analog_ranking,
-    generate_markdown_report,
 )
 
 st.set_page_config(
     page_title="Planetary Analog Finder | NASA Space Apps",
     page_icon="🛰️",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Carga cacheada para rendimiento instantáneo en la demo
+MASTER_PARQUET = Path("data/master_analogs.parquet")
+MASTER_CSV = Path("data/master_analogs.csv")
+TARGETS_JSON = Path("data/extraterrestrial_targets.json")
+
+
+def translate_geology_to_en(text: str) -> str:
+    """Ensures any Spanish geological terms in cached CSV/Parquet files render in clean English."""
+    if not isinstance(text, str):
+        return "Basaltic & Arid Planetary Analog Terrain"
+    replacements = {
+        "Desierto hiperárido": "Hyper-arid desert",
+        "suelos ricos en": "soils rich in",
+        "percloratos": "perchlorates",
+        "sulfatos": "sulfates",
+        "óxidos de hierro": "iron oxides",
+        "Cráter de impacto": "Impact crater",
+        "brechas": "breccias",
+        "permafrost": "permafrost",
+        "Valles secos": "Dry valleys",
+        "hielo subsuperficial": "subsurface ice",
+        "Volcán": "Volcano",
+        "basáltico": "basaltic",
+        "basáltica": "basaltic",
+        "ceniza volcánica": "volcanic ash",
+        "flujos de lava": "lava flows",
+        "tubos de lava": "lava tubes",
+        "Salar": "Salt flat",
+        "costra salina": "evaporitic salt crust",
+        "borde volcánico": "volcanic rim",
+        "Meseta": "High-altitude plateau",
+        "planicie": "plain",
+        "dunas": "dunes",
+        "campo volcánico": "volcanic field",
+        "y": "and",
+        "con": "with",
+        "de": "of",
+    }
+    out = text
+    for es, en in replacements.items():
+        out = out.replace(es, en)
+    return out
+
+
 @st.cache_data
-def get_data():
-    return load_datasets()
+def load_data():
+    if MASTER_PARQUET.exists():
+        df = pd.read_parquet(MASTER_PARQUET)
+    elif MASTER_CSV.exists():
+        df = pd.read_csv(MASTER_CSV)
+    else:
+        st.error("Master dataset not found. Please run `python etl/fetch_terrain_sar.py` first.")
+        st.stop()
+
+    if "primary_geology" in df.columns:
+        df["primary_geology"] = df["primary_geology"].apply(translate_geology_to_en)
+
+    with open(TARGETS_JSON, "r", encoding="utf-8") as f:
+        targets_data = json.load(f)["targets"]
+    return df, targets_data
 
 
-df_master, targets_list = get_data()
-targets_by_name = {t["name"]: t for t in targets_list}
+df_sites, targets = load_data()
 
-# --- BARRA LATERAL: CONFIGURACIÓN DE MISIÓN ---
-st.sidebar.title("🛰️ Control de Misión")
-selected_target_name = st.sidebar.selectbox(
-    "1. Selecciona Objetivo Extraterrestre:",
-    options=list(targets_by_name.keys()),
+# --- SIDEBAR: MISSION CONFIGURATION ---
+st.sidebar.title("🛰️ Mission Control")
+st.sidebar.caption("Planetary Analog Finder • NASA & ESA Official Data")
+
+target_names = [t["name"] for t in targets]
+selected_target_name = st.sidebar.selectbox("Extraterrestrial Target", target_names, index=0)
+selected_target = next(t for t in targets if t["name"] == selected_target_name)
+
+st.sidebar.info(
+    f"**Celestial Body:** {selected_target['body']}\n\n"
+    f"**Mission Focus:** {selected_target['mission_focus']}"
 )
-target = targets_by_name[selected_target_name]
-
-st.sidebar.info(f"**Cuerpo:** {target['body']}\n\n**Enfoque:** {target['mission_focus']}")
 
 category_filter = st.sidebar.radio(
-    "2. Filtrar Sitios Terrestres:",
-    options=["Todos (Control + Descubrimiento)", "Solo Discovery (Nuevos Sitios)", "Solo Control (Calibración)"],
+    "Terrestrial Candidate Group",
+    ["All Sites (15)", "Discovery Only (11)", "Control Only (4)"],
+    index=0,
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("3. Pesos por Subsistema")
-st.sidebar.caption("Ajusta la prioridad según el hardware o fase de misión que deseas validar:")
+st.sidebar.subheader("Subsystem Priority Weights")
+st.sidebar.caption("Adjust engineering weights (0.0 – 2.5) to recalculate similarity in real time:")
 
-dw = target["default_weights"]
-custom_weights = {
-    "slope_deg": st.sidebar.slider("Seguridad de Aterrizaje (Pendiente)", 0.0, 2.5, float(dw["slope_deg"]), 0.1),
-    "diurnal_temp_range_c": st.sidebar.slider("Estrés Térmico (ΔT Diaria)", 0.0, 2.5, float(dw["diurnal_temp_range_c"]), 0.1),
-    "aridity_ice_index": st.sidebar.slider("Hiperaridez / Hielo Subsuperficial", 0.0, 2.5, float(dw["aridity_ice_index"]), 0.1),
-    "basalt_oxide_index": st.sidebar.slider("Mineralogía Basáltica / Óxidos", 0.0, 2.5, float(dw["basalt_oxide_index"]), 0.1),
-    "sar_roughness_index": st.sidebar.slider("Rugosidad Radar (SAR)", 0.0, 2.5, float(dw["sar_roughness_index"]), 0.1),
+default_w = selected_target["default_weights"]
+weights = {
+    "slope_deg": st.sidebar.slider("Landing Safety (Slope)", 0.0, 2.5, float(default_w["slope_deg"]), 0.1),
+    "diurnal_temp_range_c": st.sidebar.slider("Thermal Swing (ΔT)", 0.0, 2.5, float(default_w["diurnal_temp_range_c"]), 0.1),
+    "aridity_ice_index": st.sidebar.slider("Hyper-Aridity & Ice", 0.0, 2.5, float(default_w["aridity_ice_index"]), 0.1),
+    "basalt_oxide_index": st.sidebar.slider("Basalt & Iron Oxides", 0.0, 2.5, float(default_w["basalt_oxide_index"]), 0.1),
+    "sar_roughness_index": st.sidebar.slider("SAR Surface Roughness", 0.0, 2.5, float(default_w["sar_roughness_index"]), 0.1),
 }
 
-# Ejecutar motor matemático
-ranked_df = compute_analog_ranking(df_master, target, custom_weights)
+# Compute full ranking first, then apply category filter
+ranked_all = compute_analog_ranking(df_sites, selected_target, weights)
 
-if category_filter == "Solo Discovery (Nuevos Sitios)":
-    display_df = ranked_df[ranked_df["category"] == "Discovery"].copy()
-elif category_filter == "Solo Control (Calibración)":
-    display_df = ranked_df[ranked_df["category"] == "Control"].copy()
+if "Discovery" in category_filter:
+    display_df = ranked_all[ranked_all["category"] == "Discovery"].reset_index(drop=True)
+elif "Control" in category_filter:
+    display_df = ranked_all[ranked_all["category"] == "Control"].reset_index(drop=True)
 else:
-    display_df = ranked_df.copy()
+    display_df = ranked_all.copy()
 
-# --- ENCABEZADO PRINCIPAL ---
-st.title("🌍 Planetary Analog Finder: Earth-to-Moon & Mars Twin Engine")
+# --- HEADER & KPI CARDS ---
+st.title("🪐 Planetary Analog Finder")
 st.markdown(
-    f"Identificación sistemática de análogos terrestres mediante datos reales de **NASA POWER**, "
-    f"**Copernicus DEM/Sentinel-2** y métricas **SAR** para **{target['name']}**."
+    "Geophysical similarity engine powered by **NASA PDS (LRO Diviner, LOLA, MOLA, CRISM)**, "
+    "**NASA POWER**, **NASA Earthdata / Worldview GIBS**, and **ESA Copernicus Sentinel-1**."
 )
 
-# Métricas resumen superiores
-top_overall = ranked_df.iloc[0]
-top_discovery = ranked_df[ranked_df["category"] == "Discovery"].iloc[0]
-top_control = ranked_df[ranked_df["category"] == "Control"].iloc[0]
+top_overall = ranked_all.iloc[0]
+top_discovery = ranked_all[ranked_all["category"] == "Discovery"].iloc[0]
+top_control = ranked_all[ranked_all["category"] == "Control"].iloc[0]
 
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("🥇 Mejor Análogo Global", top_overall["site_name"].split("(")[0].strip(), f"{top_overall['similarity_pct']}% similitud")
-m2.metric("🔭 Top Nuevo Descubrimiento", top_discovery["site_name"].split("(")[0].strip(), f"{top_discovery['similarity_pct']}% (#{top_discovery['rank']})")
-m3.metric("✅ Calibración (Control NASA)", top_control["site_name"].split("(")[0].strip(), f"{top_control['similarity_pct']}% (#{top_control['rank']})")
-m4.metric("📡 Sitios Analizados", f"{len(ranked_df)} ubicaciones", "5 dimensiones físicas")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+kpi1.metric("Top Overall Analog", f"{top_overall['similarity_pct']}%", top_overall["site_name"])
+kpi2.metric("Top Discovery Site", f"{top_discovery['similarity_pct']}%", top_discovery["site_name"])
+kpi3.metric("Top NASA Control Benchmark", f"{top_control['similarity_pct']}%", top_control["site_name"])
+kpi4.metric("Evaluated Sites", f"{len(display_df)}", f"Target: {selected_target['body']}")
 
-# --- PESTAÑAS DE EXPLORACIÓN ---
-tab_map, tab_diag, tab_val = st.tabs(
-    ["🗺️ Mapa Satelital y Ranking", "🔬 Diagnóstico Geofísico y Ruptura", "📊 Validación Científica (Benchmark)"]
-)
+st.markdown("---")
 
-# TAB 1: MAPA Y RANKING
-with tab_map:
-    col_map, col_table = st.columns([1.15, 1])
+# --- MAIN TABS ---
+tab1, tab2, tab3 = st.tabs([
+    "🗺️ Satellite Map & Prioritization Ranking",
+    "🔬 Geophysical Diagnosis & Analogy Breakdown",
+    "📊 Scientific Validation (Benchmark)",
+])
+
+# === TAB 1: MAP & RANKING ===
+with tab1:
+    col_map, col_table = st.columns([1.15, 1.0])
 
     with col_map:
-        st.subheader("Distribución Global de Análogos Candidatos")
+        st.subheader("Global Distribution of Candidate Analogs")
         m = folium.Map(location=[5.0, -25.0], zoom_start=2, tiles=None)
         folium.TileLayer(
             tiles="https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",
             attr="NASA Worldview / GIBS (Earthdata)",
-            name="NASA Worldview (Relieve y Batimetría)",
+            name="NASA Worldview (Shaded Relief)",
             overlay=False,
             control=True,
             max_native_zoom=8,
@@ -119,12 +181,12 @@ with tab_map:
 
             popup_html = (
                 f"<b>#{row['rank']} {row['site_name']}</b><br>"
-                f"Categoría: {row['category']}<br>"
-                f"Similitud Global: <b>{score}%</b><br>"
-                f"Pendiente: {row['slope_deg']}° | ΔT: {row['diurnal_temp_range_c']}°C<br>"
-                f"Geología: {row['primary_geology']}<br>"
+                f"Category: {row['category']}<br>"
+                f"Global Similarity: <b>{score}%</b><br>"
+                f"Slope: {row['slope_deg']}° | ΔT: {row['diurnal_temp_range_c']}°C<br>"
+                f"Geology: {row['primary_geology']}<br>"
                 f"<hr style='margin:4px 0;'>"
-                f"<small><b>NASA Earthdata:</b> {row.get('nasa_granule_id', 'NASADEM')}<br>"
+                f"<small><b>NASA Earthdata:</b> {row.get('nasa_granule_id', 'NASADEM_HGT')}<br>"
                 f"<b>ESA Sentinel-1:</b> {row.get('esa_sar_product_id', 'S1_SAR')}</small>"
             )
             folium.Marker(
@@ -134,126 +196,155 @@ with tab_map:
                 icon=folium.Icon(color=color, icon="globe", prefix="fa"),
             ).add_to(m)
 
-        st_folium(m, width=None, height=460, returned_objects=[])
-        st.caption("Leyenda: 🔵 Sitio de Control (Calibración) | 🟢 Descubrimiento ≥80% | 🟠 Descubrimiento 68–79% | 🔴 Baja similitud")
+        st_folium(m, width=None, height=470, returned_objects=[])
+        st.caption(
+            "Pin Legend: 🔵 Blue = NASA Control Benchmark | 🟢 Green = High Similarity (≥80%) | "
+            "🟠 Orange = Moderate (68–79%) | 🔴 Red = Low (<68%)"
+        )
 
     with col_table:
-        st.subheader("Tabla de Priorización por Similitud")
-        cols_show = [
+        st.subheader("Subsystem Prioritization Ranking")
+        table_cols = [
             "rank",
             "site_name",
             "category",
             "similarity_pct",
-            "topo_landing_score",
-            "thermal_aridity_score",
-            "geology_score",
+            "landing_topo_score",
+            "climate_cryo_score",
+            "mineralogy_score",
         ]
-        st.dataframe(
-            display_df[cols_show].rename(
-                columns={
-                    "rank": "#",
-                    "site_name": "Ubicación Terrestre",
-                    "category": "Tipo",
-                    "similarity_pct": "Similitud (%)",
-                    "topo_landing_score": "Topografía (%)",
-                    "thermal_aridity_score": "Clima/Hielo (%)",
-                    "geology_score": "Mineralogía (%)",
-                }
-            ),
-            use_container_width=True,
-            height=460,
-            hide_index=True,
+        renamed_table = display_df[table_cols].rename(
+            columns={
+                "rank": "Rank",
+                "site_name": "Terrestrial Site",
+                "category": "Group",
+                "similarity_pct": "Global (%)",
+                "landing_topo_score": "Landing/Topo (%)",
+                "climate_cryo_score": "Climate/Ice (%)",
+                "mineralogy_score": "Mineralogy (%)",
+            }
         )
+        st.dataframe(renamed_table, use_container_width=True, height=470, hide_index=True)
 
-# TAB 2: DIAGNÓSTICO DE RUPTURA Y COMPARACIÓN RADAR
-with tab_diag:
-    selected_site_name = st.selectbox(
-        "Selecciona una ubicación terrestre para auditar su transferencia tecnológica:",
-        options=display_df["site_name"].tolist(),
-    )
-    site_row = display_df[display_df["site_name"] == selected_site_name].iloc[0]
+# === TAB 2: GEOPHYSICAL DIAGNOSIS & RADAR ===
+with tab2:
+    st.subheader("Multi-Dimensional Geophysical Fingerprint & Analogy Limits")
+    site_options = display_df["site_name"].tolist()
+    chosen_site_name = st.selectbox("Select a Terrestrial Site to Audit:", site_options, index=0)
+    site_row = display_df[display_df["site_name"] == chosen_site_name].iloc[0]
 
-    c_radar, c_specs = st.columns([1, 1.15])
+    col_radar, col_diag = st.columns([1.05, 1.0])
 
-    with c_radar:
-        st.subheader("Huella Geofísica Normalizada")
-        target_norm = normalize_vector(target["physical_vector"])
-        site_norm = site_row["norm_vector"]
-        labels = [FEATURE_LABELS[f] for f in FEATURES]
+    with col_radar:
+        categories = [FEATURE_LABELS_EN[k] for k in FEATURE_KEYS]
+        earth_vals = [float(site_row[f"norm_{k}"]) for k in FEATURE_KEYS]
+        target_vals = [
+            normalize_value(float(selected_target["physical_vector"][k]), k)
+            for k in FEATURE_KEYS
+        ]
 
         fig_radar = go.Figure()
         fig_radar.add_trace(
             go.Scatterpolar(
-                r=target_norm.tolist() + [target_norm[0]],
-                theta=labels + [labels[0]],
+                r=target_vals + [target_vals[0]],
+                theta=categories + [categories[0]],
                 fill="toself",
-                name=f"Objetivo: {target['name']}",
+                name=f"Target: {selected_target['name']}",
                 line_color="#FF6B35",
             )
         )
         fig_radar.add_trace(
             go.Scatterpolar(
-                r=site_norm + [site_norm[0]],
-                theta=labels + [labels[0]],
+                r=earth_vals + [earth_vals[0]],
+                theta=categories + [categories[0]],
                 fill="toself",
-                name=f"Tierra: {site_row['site_name']}",
+                name=f"Earth: {site_row['site_name']}",
                 line_color="#00B4D8",
             )
         )
         fig_radar.update_layout(
             polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+            showlegend=True,
+            height=430,
             margin=dict(l=40, r=40, t=30, b=30),
-            legend=dict(orientation="h", yanchor="bottom", y=-0.25),
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
-    with c_specs:
-        st.subheader(f"Auditoría de Ingeniería: {site_row['site_name']}")
-        s1, s2, s3 = st.columns(3)
-        s1.metric("Similitud Global", f"{site_row['similarity_pct']}%", f"Rank #{site_row['rank']}")
-        s2.metric("Aterrizaje / SAR", f"{site_row['topo_landing_score']}%")
-        s3.metric("Clima / Hiperaridez", f"{site_row['thermal_aridity_score']}%")
-
-        st.success(
-            f"**✅ Dónde funciona la analogía ({site_row['strongest_match']}):**\n\n"
-            + "\n".join([f"- {app}" for app in target["engineering_applications"]])
+    with col_diag:
+        st.markdown(f"### {site_row['site_name']} (`{site_row['category']}`)")
+        st.markdown(
+            f"**Global Similarity Score:** `{site_row['similarity_pct']}%` &nbsp;|&nbsp; "
+            f"**Coordinates:** `{site_row['lat']:.3f}, {site_row['lon']:.3f}`"
         )
+        st.markdown(f"**Primary Geology:** {site_row['primary_geology']}")
+        st.success(f"**Primary Physical Strength:** {site_row['top_strength']}")
+        st.warning(f"**Largest Physical Gap:** {site_row['main_gap']}")
 
-        st.warning(
-            f"**⚠️ Dónde se rompe la analogía ({site_row['weakest_match']} + Límites Planetarios):**\n\n"
-            + "\n".join([f"- {brk}" for brk in target["analogy_breakdowns"]])
-        )
+        st.markdown("#### Recommended Engineering Field Tests")
+        for app_item in selected_target["engineering_applications"]:
+            st.markdown(f"- {app_item}")
 
-        report_md = generate_markdown_report(site_row, target)
+        st.markdown("#### Where the Analogy Breaks Down (Non-Replicable Space Conditions)")
+        for brk_item in selected_target["analogy_breakdowns"]:
+            st.markdown(f"- {brk_item}")
+
+        # Generate downloadable English Mission Brief (.md)
+        md_report = f"""# Planetary Analog Mission Brief
+**Terrestrial Analog Site:** {site_row['site_name']} ({site_row['category']})
+**Extraterrestrial Target:** {selected_target['name']} ({selected_target['body']})
+**Mission Focus:** {selected_target['mission_focus']}
+**Global Similarity Index:** {site_row['similarity_pct']}% (Rank #{site_row['rank']})
+
+## 1. Geophysical Comparison Table
+| Parameter | Earth Site Value | Space Target Value | Subsystem Score |
+| :--- | :---: | :---: | :---: |
+| Topographic Slope | {site_row['slope_deg']}° | {selected_target['physical_vector']['slope_deg']}° | {site_row['landing_topo_score']}% (Landing/Topo) |
+| Diurnal Temp Swing (ΔT) | {site_row['diurnal_temp_range_c']}°C | {selected_target['physical_vector']['diurnal_temp_range_c']}°C | {site_row['climate_cryo_score']}% (Climate/Cryo) |
+| Hyper-Aridity & Ice Index | {site_row['aridity_ice_index']} | {selected_target['physical_vector']['aridity_ice_index']} | {site_row['climate_cryo_score']}% (Climate/Cryo) |
+| Basalt & Iron Oxide Index | {site_row['basalt_oxide_index']} | {selected_target['physical_vector']['basalt_oxide_index']} | {site_row['mineralogy_score']}% (Mineralogy) |
+| SAR Surface Roughness | {site_row['sar_roughness_index']} | {selected_target['physical_vector']['sar_roughness_index']} | {site_row['landing_topo_score']}% (Landing/Topo) |
+
+## 2. Official NASA & ESA Data Traceability
+- **NASA Earthdata Granule ID:** `{site_row.get('nasa_granule_id', 'NASADEM_HGT')}`
+- **ESA Copernicus Sentinel-1 Product:** `{site_row.get('esa_sar_product_id', 'S1_SAR')}`
+- **Planetary Ground Truth Sources:** {', '.join(selected_target.get('official_nasa_sources', ['NASA PDS']))}
+
+## 3. Recommended Field Validation Tests
+{chr(10).join(['- ' + x for x in selected_target['engineering_applications']])}
+
+## 4. Analogy Breakdowns (Simulation Chamber Required)
+{chr(10).join(['- ' + x for x in selected_target['analogy_breakdowns']])}
+"""
         st.download_button(
-            label="📥 Descargar Ficha Técnica de Misión (.md)",
-            data=report_md,
-            file_name=f"analog_report_{site_row['site_id']}_{target['target_id']}.md",
+            label="📥 Download Mission Technical Brief (.md)",
+            data=md_report,
+            file_name=f"analog_brief_{site_row['site_id']}_{selected_target['target_id']}.md",
             mime="text/markdown",
         )
 
-# TAB 3: VALIDACIÓN CIENTÍFICA
-with tab_val:
-    st.subheader("Prueba de Calibración: Sitios Control vs. Nuevos Descubrimientos")
+# === TAB 3: SCIENTIFIC VALIDATION ===
+with tab3:
+    st.subheader("Blind Benchmark Validation: Control vs. Discovery Sites")
     st.markdown(
-        "Para validar científicamente el algoritmo, incluimos análogos históricos reconocidos por la NASA "
-        "(**Grupo Control**: Atacama, Cráter Haughton, Mauna Kea, Valles Secos de McMurdo) junto con regiones "
-        "poco exploradas (**Grupo Discovery**). El modelo identifica automáticamente los sitios control en los "
-        "primeros puestos y revela candidatos inéditos de alto valor operativo."
+        "Without receiving prior labels, the mathematical model independently recovers established NASA "
+        "analog sites (**Control**) near the top of the ranking before surfacing underexplored **Discovery** candidates."
     )
 
     fig_bar = px.bar(
-        ranked_df.sort_values("similarity_pct", ascending=True),
+        ranked_all.sort_values(by="similarity_pct", ascending=True),
         x="similarity_pct",
         y="site_name",
         color="category",
         orientation="h",
-        color_discrete_map={"Control": "#3B82F6", "Discovery": "#10B981"},
+        text="similarity_pct",
+        color_discrete_map={"Control": "#1D4ED8", "Discovery": "#10B981"},
         labels={
-            "similarity_pct": "Índice de Similitud Multidimensional (%)",
-            "site_name": "Ubicación Terrestre",
-            "category": "Grupo",
+            "similarity_pct": "Hybrid Similarity Score (%)",
+            "site_name": "Terrestrial Location",
+            "category": "Site Group",
         },
         height=520,
     )
+    fig_bar.update_traces(texttemplate="%{text}%", textposition="outside")
+    fig_bar.update_layout(xaxis_range=[0, 105], margin=dict(l=20, r=40, t=20, b=20))
     st.plotly_chart(fig_bar, use_container_width=True)

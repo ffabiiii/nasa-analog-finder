@@ -1,9 +1,7 @@
-import json
-from pathlib import Path
 import numpy as np
 import pandas as pd
 
-FEATURES = [
+FEATURE_KEYS = [
     "slope_deg",
     "diurnal_temp_range_c",
     "aridity_ice_index",
@@ -11,16 +9,7 @@ FEATURES = [
     "sar_roughness_index",
 ]
 
-FEATURE_LABELS = {
-    "slope_deg": "Pendiente Topográfica (°)",
-    "diurnal_temp_range_c": "Amplitud Térmica Diaria (°C)",
-    "aridity_ice_index": "Índice de Hiperaridez / Criósfera",
-    "basalt_oxide_index": "Mineralogía Basáltica y Óxidos",
-    "sar_roughness_index": "Rugosidad Superficial (SAR)",
-}
-
-# Límites físicos globales para proyectar Tierra, Luna y Marte en el mismo espacio [0, 1]
-PHYSICAL_BOUNDS = {
+FEATURE_BOUNDS = {
     "slope_deg": (0.0, 35.0),
     "diurnal_temp_range_c": (0.0, 145.0),
     "aridity_ice_index": (0.0, 1.0),
@@ -28,130 +17,104 @@ PHYSICAL_BOUNDS = {
     "sar_roughness_index": (0.0, 1.0),
 }
 
+FEATURE_LABELS_EN = {
+    "slope_deg": "Topographic Slope",
+    "diurnal_temp_range_c": "Diurnal Thermal Swing",
+    "aridity_ice_index": "Hyper-Aridity & Cryosphere",
+    "basalt_oxide_index": "Basalt & Iron Oxides",
+    "sar_roughness_index": "SAR Surface Roughness",
+}
 
-def load_datasets(
-    parquet_path: str = "data/master_analogs.parquet",
-    targets_path: str = "data/extraterrestrial_targets.json",
-) -> tuple[pd.DataFrame, list[dict]]:
-    """Carga el dataset maestro terrestre y los objetivos extraterrestres."""
-    df = pd.read_parquet(parquet_path)
-    with open(targets_path, "r", encoding="utf-8") as f:
-        targets = json.load(f)["targets"]
-    return df, targets
+FEATURE_UNITS = {
+    "slope_deg": "°",
+    "diurnal_temp_range_c": "°C",
+    "aridity_ice_index": " idx",
+    "basalt_oxide_index": " idx",
+    "sar_roughness_index": " idx",
+}
 
 
-def normalize_vector(raw_dict: dict) -> np.ndarray:
-    """Normaliza un diccionario de parámetros físicos al rango [0.0, 1.0]."""
-    vec = []
-    for feat in FEATURES:
-        min_v, max_v = PHYSICAL_BOUNDS[feat]
-        val = float(raw_dict[feat])
-        norm_val = np.clip((val - min_v) / (max_v - min_v), 0.0, 1.0)
-        vec.append(norm_val)
-    return np.array(vec, dtype=float)
+def normalize_value(val: float, key: str) -> float:
+    low, high = FEATURE_BOUNDS[key]
+    return float(np.clip((val - low) / (high - low), 0.0, 1.0))
 
 
 def compute_analog_ranking(
-    df: pd.DataFrame, target: dict, custom_weights: dict | None = None
+    df: pd.DataFrame,
+    target: dict,
+    weights: dict[str, float],
 ) -> pd.DataFrame:
     """
-    Calcula el ranking de similitud multidimensional y métricas por subsistema
-    frente a un objetivo lunar o marciano.
+    Projects Earth candidate sites and the extraterrestrial target into a 5D normalized
+    geophysical vector space and computes a hybrid Cosine + Euclidean similarity index.
     """
-    weights_dict = custom_weights if custom_weights else target["default_weights"]
-    w = np.array([float(weights_dict[f]) for f in FEATURES], dtype=float)
-    if np.sum(w) == 0:
-        w = np.ones(len(FEATURES), dtype=float)
+    result = df.copy()
+    t_phys = target["physical_vector"]
 
-    t_norm = normalize_vector(target["physical_vector"])
-    t_weighted = t_norm * w
-    t_norm_mag = np.linalg.norm(t_weighted)
+    t_norm = np.array([normalize_value(float(t_phys[k]), k) for k in FEATURE_KEYS], dtype=float)
+    w_vec = np.array([float(weights.get(k, 1.0)) for k in FEATURE_KEYS], dtype=float)
+    if np.linalg.norm(w_vec) == 0:
+        w_vec = np.ones(len(FEATURE_KEYS), dtype=float)
 
-    results = []
-    for _, row in df.iterrows():
-        e_norm = normalize_vector(row.to_dict())
-        e_weighted = e_norm * w
-        e_norm_mag = np.linalg.norm(e_weighted)
+    e_norm = np.zeros((len(result), len(FEATURE_KEYS)), dtype=float)
+    for j, k in enumerate(FEATURE_KEYS):
+        low, high = FEATURE_BOUNDS[k]
+        vals = np.clip((result[k].astype(float).to_numpy() - low) / (high - low), 0.0, 1.0)
+        e_norm[:, j] = vals
+        result[f"norm_{k}"] = np.round(vals, 3)
 
-        # 1. Similitud del Coseno Ponderada (alineación direccional de perfil)
-        if t_norm_mag > 0 and e_norm_mag > 0:
-            cos_sim = float(np.dot(t_weighted, e_weighted) / (t_norm_mag * e_norm_mag))
-        else:
-            cos_sim = 0.0
+    # Weighted vectors
+    e_w = e_norm * w_vec
+    t_w = t_norm * w_vec
 
-        # 2. Similitud de Proximidad Euclidiana Ponderada (cercanía en magnitud real)
-        max_dist = np.linalg.norm(w)
-        euclid_dist = float(np.linalg.norm(t_weighted - e_weighted))
-        prox_sim = max(0.0, 1.0 - (euclid_dist / max_dist))
+    # 1. Weighted Cosine Similarity
+    dot_products = e_w @ t_w
+    norms_e = np.linalg.norm(e_w, axis=1)
+    norm_t = float(np.linalg.norm(t_w))
+    denom = norms_e * norm_t
+    cos_sim = np.where(denom > 0, dot_products / denom, 0.0)
 
-        # Score Híbrido (50% alineación + 50% proximidad física)
-        hybrid_score = round((0.5 * cos_sim + 0.5 * prox_sim) * 100.0, 2)
+    # 2. Normalized Euclidean Proximity
+    euclid_dist = np.linalg.norm(e_w - t_w, axis=1)
+    euclid_sim = 1.0 - (euclid_dist / np.linalg.norm(w_vec))
 
-        # Similitudes parciales por subsistema de ingeniería (0 a 100%)
-        dim_diffs = np.abs(t_norm - e_norm)
-        dim_sims = (1.0 - dim_diffs) * 100.0
+    # Hybrid Global Similarity Score (%)
+    global_sim = np.clip(100.0 * (0.5 * cos_sim + 0.5 * euclid_sim), 0.0, 100.0)
+    result["similarity_pct"] = np.round(global_sim, 1)
 
-        topo_score = round(float(0.6 * dim_sims[0] + 0.4 * dim_sims[4]), 1)
-        env_score = round(float(0.45 * dim_sims[1] + 0.55 * dim_sims[2]), 1)
-        geo_score = round(float(dim_sims[3]), 1)
+    # Per-feature closeness [0, 1]
+    feat_closeness = 1.0 - np.abs(e_norm - t_norm)
 
-        best_idx = int(np.argmax(dim_sims))
-        worst_idx = int(np.argmin(dim_sims))
+    # Subsystem partial scores (%)
+    result["landing_topo_score"] = np.round(
+        100.0 * (0.60 * feat_closeness[:, 0] + 0.40 * feat_closeness[:, 4]), 1
+    )
+    result["climate_cryo_score"] = np.round(
+        100.0 * (0.45 * feat_closeness[:, 1] + 0.55 * feat_closeness[:, 2]), 1
+    )
+    result["mineralogy_score"] = np.round(100.0 * feat_closeness[:, 3], 1)
 
-        row_dict = row.to_dict()
-        row_dict.update(
-            {
-                "similarity_pct": hybrid_score,
-                "topo_landing_score": topo_score,
-                "thermal_aridity_score": env_score,
-                "geology_score": geo_score,
-                "strongest_match": f"{FEATURE_LABELS[FEATURES[best_idx]]} ({dim_sims[best_idx]:.1f}%)",
-                "weakest_match": f"{FEATURE_LABELS[FEATURES[worst_idx]]} ({dim_sims[worst_idx]:.1f}%)",
-                "norm_vector": e_norm.tolist(),
-            }
-        )
-        results.append(row_dict)
+    # Automated strength and physical gap diagnostics in English
+    strengths = []
+    gaps = []
+    for i in range(len(result)):
+        best_j = int(np.argmax(feat_closeness[i]))
+        worst_j = int(np.argmin(feat_closeness[i]))
 
-    ranked_df = pd.DataFrame(results).sort_values(
-        by="similarity_pct", ascending=False
-    ).reset_index(drop=True)
-    ranked_df["rank"] = ranked_df.index + 1
-    return ranked_df
+        best_key = FEATURE_KEYS[best_j]
+        worst_key = FEATURE_KEYS[worst_j]
 
+        best_pct = feat_closeness[i, best_j] * 100.0
+        e_raw = float(result.iloc[i][worst_key])
+        t_raw = float(t_phys[worst_key])
+        delta = abs(e_raw - t_raw)
 
-def generate_markdown_report(site_row: pd.Series, target: dict) -> str:
-    """Genera una ficha técnica descargable en Markdown para planificadores de misión."""
-    apps = "\n".join([f"- {item}" for item in target["engineering_applications"]])
-    breaks = "\n".join([f"- {item}" for item in target["analogy_breakdowns"]])
+        strengths.append(f"{FEATURE_LABELS_EN[best_key]} ({best_pct:.0f}% match)")
+        gaps.append(f"{FEATURE_LABELS_EN[worst_key]} (Δ {delta:.2f}{FEATURE_UNITS[worst_key]})")
 
-    return f"""# Ficha Técnica de Análogo Planetario: {site_row['site_name']}
-**ID del Sitio:** `{site_row['site_id']}` | **Categoría:** {site_row['category']} | **País:** {site_row['country']}
-**Coordenadas:** `{site_row['lat']}, {site_row['lon']}`
-**Objetivo Extraterrestre Evaluado:** {target['name']} ({target['body']})
-**Enfoque de Misión:** {target['mission_focus']}
+    result["top_strength"] = strengths
+    result["main_gap"] = gaps
 
----
-
-## 1. Métricas de Similitud Multidimensional
-- **Índice Global de Similitud:** **{site_row['similarity_pct']}%** (Ranking #{site_row['rank']})
-- **Subsistema Topografía y Aterrizaje (DEM + SAR):** {site_row['topo_landing_score']}%
-- **Subsistema Térmico y Criósfera/Hiperaridez:** {site_row['thermal_aridity_score']}%
-- **Subsistema Mineralogía y Composición Superficial:** {site_row['geology_score']}%
-- **Mayor Fortaleza Física:** {site_row['strongest_match']}
-- **Mayor Brecha Terrestre:** {site_row['weakest_match']}
-
-## 2. Comparativa de Parámetros Reales (Tierra vs. {target['body']})
-| Parámetro Geofísico | {site_row['site_name']} (Tierra) | {target['name']} ({target['body']}) |
-| :--- | :---: | :---: |
-| Pendiente Topográfica (°) | {site_row['slope_deg']}° | {target['physical_vector']['slope_deg']}° |
-| Amplitud Térmica Diaria (°C) | {site_row['diurnal_temp_range_c']} °C | {target['physical_vector']['diurnal_temp_range_c']} °C |
-| Índice de Hiperaridez / Hielo | {site_row['aridity_ice_index']} | {target['physical_vector']['aridity_ice_index']} |
-| Índice Basalto / Óxidos de Hierro | {site_row['basalt_oxide_index']} | {target['physical_vector']['basalt_oxide_index']} |
-| Rugosidad Superficial (SAR) | {site_row['sar_roughness_index']} | {target['physical_vector']['sar_roughness_index']} |
-
-## 3. Aplicaciones de Ingeniería Recomendadas
-{apps}
-
-## 4. Diagnóstico de Ruptura de Analogía (Limitaciones Físicas)
-{breaks}
-"""
+    result = result.sort_values(by="similarity_pct", ascending=False).reset_index(drop=True)
+    result["rank"] = np.arange(1, len(result) + 1)
+    return result
