@@ -15,8 +15,8 @@ from engine.similarity_model import (
 )
 
 st.set_page_config(
-    page_title="Planetary Analog Finder | NASA Space Apps",
-    page_icon="🛰️",
+    page_title="Terra Analog Explore | NASA Space Apps",
+    page_icon="🌠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
