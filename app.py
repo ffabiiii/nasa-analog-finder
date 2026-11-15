@@ -96,7 +96,15 @@ with tab_map:
 
     with col_map:
         st.subheader("Distribución Global de Análogos Candidatos")
-        m = folium.Map(location=[5.0, -25.0], zoom_start=2, tiles="Esri.WorldImagery")
+        m = folium.Map(location=[5.0, -25.0], zoom_start=2, tiles=None)
+        folium.TileLayer(
+            tiles="https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",
+            attr="NASA Worldview / GIBS (Earthdata)",
+            name="NASA Worldview (Relieve y Batimetría)",
+            overlay=False,
+            control=True,
+            max_native_zoom=8,
+        ).add_to(m)
 
         for _, row in display_df.iterrows():
             score = row["similarity_pct"]
@@ -114,11 +122,14 @@ with tab_map:
                 f"Categoría: {row['category']}<br>"
                 f"Similitud Global: <b>{score}%</b><br>"
                 f"Pendiente: {row['slope_deg']}° | ΔT: {row['diurnal_temp_range_c']}°C<br>"
-                f"Geología: {row['primary_geology']}"
+                f"Geología: {row['primary_geology']}<br>"
+                f"<hr style='margin:4px 0;'>"
+                f"<small><b>NASA Earthdata:</b> {row.get('nasa_granule_id', 'NASADEM')}<br>"
+                f"<b>ESA Sentinel-1:</b> {row.get('esa_sar_product_id', 'S1_SAR')}</small>"
             )
             folium.Marker(
                 location=[row["lat"], row["lon"]],
-                popup=folium.Popup(popup_html, max_width=280),
+                popup=folium.Popup(popup_html, max_width=300),
                 tooltip=f"#{row['rank']} {row['site_name']} ({score}%)",
                 icon=folium.Icon(color=color, icon="globe", prefix="fa"),
             ).add_to(m)
