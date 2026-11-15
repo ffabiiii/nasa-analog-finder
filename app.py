@@ -236,7 +236,14 @@ with tab2:
     col_radar, col_diag = st.columns([1.05, 1.0])
 
     with col_radar:
-        categories = [FEATURE_LABELS_EN[k] for k in FEATURE_KEYS]
+        radar_labels = {
+            "slope_deg": "Topographic<br>Slope",
+            "diurnal_temp_range_c": "Diurnal<br>Thermal Swing",
+            "aridity_ice_index": "Hyper-Aridity<br>& Cryosphere",
+            "basalt_oxide_index": "Basalt &<br>Iron Oxides",
+            "sar_roughness_index": "SAR Surface<br>Roughness",
+        }
+        categories = [radar_labels[k] for k in FEATURE_KEYS]
         earth_vals = [float(site_row[f"norm_{k}"]) for k in FEATURE_KEYS]
         target_vals = [
             normalize_value(float(selected_target["physical_vector"][k]), k)
@@ -249,8 +256,9 @@ with tab2:
                 r=target_vals + [target_vals[0]],
                 theta=categories + [categories[0]],
                 fill="toself",
-                name=f"Target: {selected_target['name']}",
-                line_color="#FF6B35",
+                fillcolor="rgba(255, 107, 53, 0.25)",
+                name=f"Target: {selected_target['body']}",
+                line=dict(color="#FF6B35", width=2.5),
             )
         )
         fig_radar.add_trace(
@@ -258,15 +266,39 @@ with tab2:
                 r=earth_vals + [earth_vals[0]],
                 theta=categories + [categories[0]],
                 fill="toself",
+                fillcolor="rgba(0, 180, 216, 0.25)",
                 name=f"Earth: {site_row['site_name']}",
-                line_color="#00B4D8",
+                line=dict(color="#00B4D8", width=2.5),
             )
         )
         fig_radar.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-            showlegend=True,
-            height=430,
-            margin=dict(l=40, r=40, t=30, b=30),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(size=12),
+            polar=dict(
+                bgcolor="rgba(128, 128, 128, 0.08)",
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 1],
+                    tickfont=dict(size=10),
+                    gridcolor="rgba(128, 128, 128, 0.25)",
+                    linecolor="rgba(128, 128, 128, 0.25)",
+                ),
+                angularaxis=dict(
+                    tickfont=dict(size=11),
+                    gridcolor="rgba(128, 128, 128, 0.25)",
+                    linecolor="rgba(128, 128, 128, 0.25)",
+                ),
+            ),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.18,
+                xanchor="center",
+                x=0.5,
+            ),
+            height=460,
+            margin=dict(l=85, r=85, t=95, b=45),
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
