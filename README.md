@@ -23,32 +23,9 @@ When space agencies select terrestrial field sites to test rovers, habitats, or 
 
 To ensure sub-second responsiveness on Streamlit Community Cloud without downloading heavy satellite imagery during live user sessions, the application was engineered using a **three-layer decoupled architecture**:
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ LAYER 1: OFFLINE GEOSPATIAL ETL PIPELINE (etl/)                             │
-│  • NASA POWER API (Climatology & Cryosphere)                                │
-│  • NASA Earthdata CMR & Worldview GIBS WMS (ASTER GDEM + MODIS Terra)       │
-│  • ESA Copernicus Data Space OData (Sentinel-1 SAR Verification)            │
-│                                     │                                       │
-│                                     ▼                                       │
-│                     [ data/master_analogs.parquet ]                         │
-└─────────────────────────────────────┬───────────────────────────────────────┘
-                                      │
-┌─────────────────────────────────────▼───────────────────────────────────────┐
-│ LAYER 2: VECTOR SIMILARITY & DIAGNOSTIC ENGINE (engine/similarity_model.py) │
-│  • Merges Earth parquet vectors with NASA PDS planetary targets (.json)     │
-│  • Normalizes physical variables to [0, 1] & applies mission weights (w)     │
-│  • Computes Hybrid Cosine + Euclidean Score & Automated Physical Gaps       │
-└─────────────────────────────────────┬───────────────────────────────────────┘
-                                      │
-┌─────────────────────────────────────▼───────────────────────────────────────┐
-│ LAYER 3: INTERACTIVE GEOVISUALIZATION DASHBOARD (app.py)                    │
-│  • Streamlit UI + Folium (NASA Worldview WMTS) + Plotly Radar & Benchmarks  │
-│  • Real-time weight sliders & downloadable Mission Technical Briefs (.md)   │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+<img width="1090" height="610" alt="image" src="https://github.com/user-attachments/assets/3ea10fce-e0c3-4094-827a-dc577c9760ca" />
 
-### Repository Structure
+### Repository
 
 ```text
 nasa-analog-finder/
@@ -110,8 +87,8 @@ In parallel, the engine computes three independent subsystem scores (**Landing &
 
 ## 5. Interactive Dashboard Features (`app.py`)
 
-* **Mission Control Sidebar:** Switch between *Shackleton Crater Rim (Moon)*, *Jezero Crater (Mars)*, and *Arcadia Planitia (Mars)*; filter between *All Sites (15)*, *Discovery Only (11)*, or *Control Only (4)*; and tune the 5 subsystem sliders in real time.
-* **Tab 1 — Satellite Map & Prioritization Ranking:** Displays color-coded markers over NASA Worldview's shaded relief layer (with popups showing NASA Earthdata and ESA Sentinel-1 granule IDs) alongside a dynamic multi-subsystem ranking table.
+* **Mission Control Sidebar:** Allows the user to switch between *Shackleton Crater Rim (Moon)*, *Jezero Crater (Mars)*, and *Arcadia Planitia (Mars)*; filter between *All Sites (15)*, *Discovery Only (11)*, or *Control Only (4)*; and tune the 5 subsystem sliders in real time.
+* **Tab 1 — Satellite Map / Ranking:** Displays color-coded markers over NASA Worldview's shaded relief layer (with popups showing NASA Earthdata and ESA Sentinel-1 granule IDs) alongside a dynamic multi-subsystem ranking table.
 * **Tab 2 — Geophysical Diagnosis & Analogy Breakdown:** Overlays Earth vs. Target 5D fingerprints on a Plotly polar radar chart, lists recommended field validation tests, explicitly highlights non-replicable space constraints (e.g., $1.62\text{ m/s}^2$ lunar gravity, ultra-high vacuum, cosmic radiation), and exports a downloadable **Mission Technical Brief (`.md`)**.
 * **Tab 3 — Scientific Validation (Benchmark):** Demonstrates that without prior labels, the model independently ranks historical NASA analog sites (*Haughton Crater*, *McMurdo Dry Valleys*, *Atacama*) at the top before surfacing new *Discovery* candidates.
 
