@@ -16,7 +16,7 @@ from engine.similarity_model import (
 
 st.set_page_config(
     page_title="Terra Analog Explore | NASA Space Apps",
-    page_icon="🌠",
+    page_icon="🌠", 
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -86,7 +86,7 @@ df_sites, targets = load_data()
 
 # --- SIDEBAR: MISSION CONFIGURATION ---
 st.sidebar.title("🛰️ Mission Control")
-st.sidebar.caption("Planetary Analog Finder • NASA & ESA Official Data")
+st.sidebar.caption("Terra Analog Explore • NASA & ESA Official Data")
 
 target_names = [t["name"] for t in targets]
 selected_target_name = st.sidebar.selectbox("Extraterrestrial Target", target_names, index=0)
@@ -127,7 +127,7 @@ else:
     display_df = ranked_all.copy()
 
 # --- HEADER & KPI CARDS ---
-st.title("🪐 Planetary Analog Finder")
+st.title("Terra Analog Explore 🌠")
 st.markdown(
     "Geophysical similarity engine powered by **NASA PDS (LRO Diviner, LOLA, MOLA, CRISM)**, "
     "**NASA POWER**, **NASA Earthdata / Worldview GIBS**, and **ESA Copernicus Sentinel-1**."
