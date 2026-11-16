@@ -27,59 +27,90 @@ MASTER_CSV = Path("data/master_analogs.csv")
 TARGETS_JSON = Path("data/extraterrestrial_targets.json")
 
 
-def translate_geology_to_en(text: str) -> str:
-    """Translates Spanish geological descriptions into clean English using word boundaries."""
-    if not isinstance(text, str):
-        return "Basaltic & Arid Planetary Analog Terrain"
+SITE_EN_CATALOG = {
+    "Isla Axel Heiberg (Expedition Fiord)": (
+        "Axel Heiberg Island (Expedition Fiord)",
+        "Continuous permafrost and cold hypersaline springs",
+    ),
+    "Desierto de Lut (Gandom Beryan)": (
+        "Lut Desert (Gandom Beryan)",
+        "Thermal extreme desert and aeolian wind-eroded yardangs",
+    ),
+    "Meseta de Ennedi (Borkou)": (
+        "Ennedi Plateau (Borkou)",
+        "Intense aeolian abrasion over hyper-arid sandstone bedrock",
+    ),
+    "Salar de Uyuni (Planicie Central)": (
+        "Salar de Uyuni (Central Plain)",
+        "Evaporitic salt crust and high-altitude volcanic rim",
+    ),
+    "Meseta de Parinacochas (Ayacucho)": (
+        "Parinacochas Plateau (Ayacucho)",
+        "High-Andean volcanic plateau with arid soils and sparse vegetation",
+    ),
+    "Depresión de Danakil (Dallol)": (
+        "Danakil Depression (Dallol)",
+        "Hyper-arid hydrothermal salt flats, sulfur, and iron-oxide deposits",
+    ),
+    "Valle de los Volcanes de Andahua (Cono Chilcayoc)": (
+        "Andahua Valley of the Volcanoes (Chilcayoc Cone)",
+        "Quaternary basaltic scoria cones and unweathered lava flows",
+    ),
+    "Pampa de la Joya (Arequipa)": (
+        "Pampa de la Joya (Arequipa)",
+        "Hyper-arid coastal desert soils rich in sulfates, nitrates, and iron oxides",
+    ),
+    "Campo Volcánico de El Pinacate (Sonora)": (
+        "El Pinacate Volcanic Field (Sonora)",
+        "Basaltic cinder cones, maar craters, and dark volcanic ash plains",
+    ),
+    "Cráter Lonar (Borde de Impacto)": (
+        "Lonar Crater (Impact Rim)",
+        "Hypervelocity impact crater excavated in Deccan basaltic bedrock",
+    ),
+    "Campo Volcánico de Tolbachik (Kamchatka)": (
+        "Tolbachik Volcanic Field (Kamchatka)",
+        "Fresh basaltic lava flows, pyroclastic ash fields, and lava tubes",
+    ),
+    "Cráter Haughton (Isla Devon)": (
+        "Haughton Crater (Devon Island)",
+        "Polar impact crater with impact breccias and continuous permafrost",
+    ),
+    "Valles Secos de McMurdo (Valle Taylor)": (
+        "McMurdo Dry Valleys (Taylor Valley)",
+        "Hyper-arid polar cold desert with subsurface permafrost",
+    ),
+    "Desierto de Atacama (Sector Yungay)": (
+        "Atacama Desert (Yungay Sector)",
+        "Hyper-arid desert soils rich in perchlorates, sulfates, and iron oxides",
+    ),
+    "Mauna Kea (Zona Alpina Volcánica)": (
+        "Mauna Kea (Volcanic Alpine Zone)",
+        "High-altitude basaltic tephra, volcanic ash, and cinder cones",
+    ),
+}
 
-    phrases = {
-        "Permafrost continuo y manantiales hipersalinos fríos": "Continuous permafrost and cold hypersaline springs",
-        "Desierto hiperárido": "Hyper-arid desert",
-        "suelos ricos en": "soils rich in",
-        "Cráter de impacto": "Impact crater",
-        "Valles secos": "Dry valleys",
-        "hielo subsuperficial": "subsurface ice",
-        "ceniza volcánica": "volcanic ash",
-        "flujos de lava": "lava flows",
-        "tubos de lava": "lava tubes",
-        "costra salina": "evaporitic salt crust",
-        "borde volcánico": "volcanic rim",
-        "campo volcánico": "volcanic field",
-        "óxidos de hierro": "iron oxides",
-    }
-    out = text
-    for es, en in phrases.items():
-        out = re.sub(re.escape(es), en, out, flags=re.IGNORECASE)
 
-    words = {
-        "percloratos": "perchlorates",
-        "sulfatos": "sulfates",
-        "brechas": "breccias",
-        "ártico": "arctic",
-        "antárticos": "antarctic",
-        "volcán": "volcano",
-        "basáltico": "basaltic",
-        "basáltica": "basaltic",
-        "basálticos": "basaltic",
-        "salar": "salt flat",
-        "meseta": "high-altitude plateau",
-        "altoandina": "high-Andean",
-        "planicie": "plain",
-        "dunas": "dunes",
-        "manantiales": "springs",
-        "hipersalinos": "hypersaline",
-        "fríos": "cold",
-        "continuo": "continuous",
-        "costero": "coastal",
-        "nitratos": "nitrates",
-        "y": "and",
-        "con": "with",
-        "de": "of",
-    }
-    for es, en in words.items():
-        out = re.sub(rf"\b{re.escape(es)}\b", en, out, flags=re.IGNORECASE)
+def localize_sites_to_en(df: pd.DataFrame) -> pd.DataFrame:
+    """Translates all 15 site names and primary geology descriptions into clean English."""
+    localized = df.copy()
+    en_names = []
+    en_geologies = []
 
-    return out[0].upper() + out[1:] if out else out
+    for _, row in localized.iterrows():
+        raw_name = str(row.get("site_name", "")).strip()
+        raw_geo = str(row.get("primary_geology", "")).strip()
+        if raw_name in SITE_EN_CATALOG:
+            new_name, new_geo = SITE_EN_CATALOG[raw_name]
+        else:
+            new_name = raw_name
+            new_geo = raw_geo if raw_geo else "Basaltic & Arid Planetary Analog Terrain"
+        en_names.append(new_name)
+        en_geologies.append(new_geo)
+
+    localized["site_name"] = en_names
+    localized["primary_geology"] = en_geologies
+    return localized
 
 
 @st.cache_data
@@ -98,8 +129,7 @@ def load_data():
 
 
 df_sites, targets = load_data()
-if "primary_geology" in df_sites.columns:
-    df_sites["primary_geology"] = df_sites["primary_geology"].apply(translate_geology_to_en)
+df_sites = localize_sites_to_en(df_sites)
 
 # --- SIDEBAR: MISSION CONFIGURATION ---
 st.sidebar.title("🛰️ Mission Control")
