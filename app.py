@@ -1,4 +1,4 @@
-import re
+import unicodedata
 import json
 from pathlib import Path
 import pandas as pd
@@ -90,26 +90,48 @@ SITE_EN_CATALOG = {
     ),
 }
 
+def _norm_key(text: str) -> str:
+    text = unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
+    return text.strip().lower()
+
+# Lookup normalizado (sin tildes ni mayúsculas) por nombre completo y por nombre base
+_NORMALIZED_CATALOG = {}
+for _es_name, (_en_name, _en_geo) in SITE_EN_CATALOG.items():
+    _NORMALIZED_CATALOG[_norm_key(_es_name)] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_en_name)] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_es_name.split("(")[0])] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_en_name.split("(")[0])] = (_en_name, _en_geo)
 
 def localize_sites_to_en(df: pd.DataFrame) -> pd.DataFrame:
-    """Translates all 15 site names and primary geology descriptions into clean English."""
+    """Translates all site names and any geology column into clean English."""
     localized = df.copy()
     en_names = []
     en_geologies = []
 
     for _, row in localized.iterrows():
         raw_name = str(row.get("site_name", "")).strip()
-        raw_geo = str(row.get("primary_geology", "")).strip()
-        if raw_name in SITE_EN_CATALOG:
-            new_name, new_geo = SITE_EN_CATALOG[raw_name]
+        full_k = _norm_key(raw_name)
+        base_k = _norm_key(raw_name.split("(")[0])
+
+        if full_k in _NORMALIZED_CATALOG:
+            new_name, new_geo = _NORMALIZED_CATALOG[full_k]
+        elif base_k in _NORMALIZED_CATALOG:
+            new_name, new_geo = _NORMALIZED_CATALOG[base_k]
         else:
             new_name = raw_name
-            new_geo = raw_geo if raw_geo else "Basaltic & Arid Planetary Analog Terrain"
+            new_geo = "Basaltic & Arid Planetary Analog Terrain"
+
         en_names.append(new_name)
         en_geologies.append(new_geo)
 
     localized["site_name"] = en_names
-    localized["primary_geology"] = en_geologies
+
+    geo_cols = [c for c in localized.columns if "geo" in c.lower()]
+    if "primary_geology" not in geo_cols:
+        geo_cols.append("primary_geology")
+    for col in geo_cols:
+        localized[col] = en_geologies
+
     return localized
 
 
@@ -165,6 +187,7 @@ weights = {
 
 # Compute full ranking first, then apply category filter
 ranked_all = compute_analog_ranking(df_sites, selected_target, weights)
+ranked_df = localize_sites_to_en(ranked_all)
 
 if "Discovery" in category_filter:
     display_df = ranked_all[ranked_all["category"] == "Discovery"].reset_index(drop=True)
