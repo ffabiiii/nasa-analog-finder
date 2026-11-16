@@ -102,21 +102,49 @@ for _es_name, (_en_name, _en_geo) in SITE_EN_CATALOG.items():
     _NORMALIZED_CATALOG[_norm_key(_es_name.split("(")[0])] = (_en_name, _en_geo)
     _NORMALIZED_CATALOG[_norm_key(_en_name.split("(")[0])] = (_en_name, _en_geo)
 
+def _norm_key(text: str) -> str:
+    text = unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
+    return " ".join(text.strip().lower().split())
+
+
+_NORMALIZED_CATALOG = {}
+for _es_name, (_en_name, _en_geo) in SITE_EN_CATALOG.items():
+    _NORMALIZED_CATALOG[_norm_key(_es_name)] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_en_name)] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_es_name.split("(")[0])] = (_en_name, _en_geo)
+    _NORMALIZED_CATALOG[_norm_key(_en_name.split("(")[0])] = (_en_name, _en_geo)
+
+_GEOLOGY_FALLBACK_MAP = {
+    "permafrost continuo y manantiales hipersalinos frios": "Continuous permafrost and cold hypersaline springs",
+    "extremo termico y erosion eolica (yardangs)": "Thermal extreme desert and aeolian wind-eroded yardangs",
+    "abrasion eolica intensa sobre lecho rocoso arido": "Intense aeolian abrasion over hyper-arid sandstone bedrock",
+    "desierto frio hiperarido con permafrost": "Hyper-arid polar cold desert with subsurface permafrost",
+}
+
+
 def localize_sites_to_en(df: pd.DataFrame) -> pd.DataFrame:
-    """Translates all site names and any geology column into clean English."""
+    """Forces clean English names and geology descriptions regardless of column naming."""
     localized = df.copy()
+    name_col = "site_name" if "site_name" in localized.columns else ("name" if "name" in localized.columns else None)
+
     en_names = []
     en_geologies = []
 
     for _, row in localized.iterrows():
-        raw_name = str(row.get("site_name", "")).strip()
+        raw_name = str(row[name_col]).strip() if name_col else ""
+        raw_geo = str(row.get("primary_geology", "")).strip()
+
         full_k = _norm_key(raw_name)
         base_k = _norm_key(raw_name.split("(")[0])
+        geo_k = _norm_key(raw_geo)
 
         if full_k in _NORMALIZED_CATALOG:
             new_name, new_geo = _NORMALIZED_CATALOG[full_k]
         elif base_k in _NORMALIZED_CATALOG:
             new_name, new_geo = _NORMALIZED_CATALOG[base_k]
+        elif geo_k in _GEOLOGY_FALLBACK_MAP:
+            new_name = raw_name
+            new_geo = _GEOLOGY_FALLBACK_MAP[geo_k]
         else:
             new_name = raw_name
             new_geo = "Basaltic & Arid Planetary Analog Terrain"
@@ -124,7 +152,8 @@ def localize_sites_to_en(df: pd.DataFrame) -> pd.DataFrame:
         en_names.append(new_name)
         en_geologies.append(new_geo)
 
-    localized["site_name"] = en_names
+    if name_col:
+        localized[name_col] = en_names
 
     geo_cols = [c for c in localized.columns if "geo" in c.lower()]
     if "primary_geology" not in geo_cols:
