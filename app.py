@@ -57,6 +57,7 @@ def translate_geology_to_en(text: str) -> str:
         "y": "and",
         "con": "with",
         "de": "of",
+        "Permafrost continuo y manantiales hipersalinos fríos": "Continuous permafrost and cold hypersaline springs",
     }
     out = text
     for es, en in replacements.items():
