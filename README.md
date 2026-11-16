@@ -10,10 +10,10 @@
 
 ## Project Resources & Documentation
 
-Para más información sobre el desarrollo, arquitectura y presentación del proyecto, puedes consultar los siguientes enlaces:
+For more information regarding the development, architecture, and presentation of the project, please check the following links:
 
-*   📊 **[Presentación (PPT)](https://docs.google.com/presentation/d/1amDyI8xjiC3wvSF2R61ramnCp7n-xMgY/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Diapositivas oficiales del proyecto y resumen ejecutivo.
-*   📄 **[Documentación Técnica](https://docs.google.com/document/d/1uTY_kyLG4eO48pWRPn8AvwDZgPjCLlWz/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Especificaciones detalladas, guías de uso y arquitectura del motor geoofísico.
+*   📊 **[Presentation (PPT)](https://docs.google.com/presentation/d/1amDyI8xjiC3wvSF2R61ramnCp7n-xMgY/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Official project slides and executive summary.
+*   📄 **[Technical Documentation](https://docs.google.com/document/d/1uTY_kyLG4eO48pWRPn8AvwDZgPjCLlWz/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Detailed specifications, user guides, and geophysical engine architecture.
 
 ## 1. Overview & Problem Statement
 
