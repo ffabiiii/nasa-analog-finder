@@ -8,6 +8,13 @@
 
 ---
 
+## Project Resources & Documentation
+
+Para más información sobre el desarrollo, arquitectura y presentación del proyecto, puedes consultar los siguientes enlaces:
+
+*   📊 **[Presentación (PPT)](https://docs.google.com/presentation/d/1amDyI8xjiC3wvSF2R61ramnCp7n-xMgY/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Diapositivas oficiales del proyecto y resumen ejecutivo.
+*   📄 **[Documentación Técnica](https://docs.google.com/document/d/1uTY_kyLG4eO48pWRPn8AvwDZgPjCLlWz/edit?usp=sharing&ouid=116639759911352692781&rtpof=true&sd=true)**: Especificaciones detalladas, guías de uso y arquitectura del motor geoofísico.
+
 ## 1. Overview & Problem Statement
 
 When space agencies select terrestrial field sites to test rovers, habitats, or spacesuits, relying purely on visual resemblance often leads to costly engineering mismatches. A desert may look like Mars in a photograph while having slopes, surface roughness, or thermal swings incompatible with the specific hardware subsystem being validated.
