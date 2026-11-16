@@ -1,3 +1,4 @@
+import re
 import json
 from pathlib import Path
 import pandas as pd
@@ -27,42 +28,58 @@ TARGETS_JSON = Path("data/extraterrestrial_targets.json")
 
 
 def translate_geology_to_en(text: str) -> str:
-    """Ensures any Spanish geological terms in cached CSV/Parquet files render in clean English."""
+    """Translates Spanish geological descriptions into clean English using word boundaries."""
     if not isinstance(text, str):
         return "Basaltic & Arid Planetary Analog Terrain"
-    replacements = {
+
+    phrases = {
+        "Permafrost continuo y manantiales hipersalinos fríos": "Continuous permafrost and cold hypersaline springs",
         "Desierto hiperárido": "Hyper-arid desert",
         "suelos ricos en": "soils rich in",
-        "percloratos": "perchlorates",
-        "sulfatos": "sulfates",
-        "óxidos de hierro": "iron oxides",
         "Cráter de impacto": "Impact crater",
-        "brechas": "breccias",
-        "permafrost": "permafrost",
         "Valles secos": "Dry valleys",
         "hielo subsuperficial": "subsurface ice",
-        "Volcán": "Volcano",
-        "basáltico": "basaltic",
-        "basáltica": "basaltic",
         "ceniza volcánica": "volcanic ash",
         "flujos de lava": "lava flows",
         "tubos de lava": "lava tubes",
-        "Salar": "Salt flat",
         "costra salina": "evaporitic salt crust",
         "borde volcánico": "volcanic rim",
-        "Meseta": "High-altitude plateau",
+        "campo volcánico": "volcanic field",
+        "óxidos de hierro": "iron oxides",
+    }
+    out = text
+    for es, en in phrases.items():
+        out = re.sub(re.escape(es), en, out, flags=re.IGNORECASE)
+
+    words = {
+        "percloratos": "perchlorates",
+        "sulfatos": "sulfates",
+        "brechas": "breccias",
+        "ártico": "arctic",
+        "antárticos": "antarctic",
+        "volcán": "volcano",
+        "basáltico": "basaltic",
+        "basáltica": "basaltic",
+        "basálticos": "basaltic",
+        "salar": "salt flat",
+        "meseta": "high-altitude plateau",
+        "altoandina": "high-Andean",
         "planicie": "plain",
         "dunas": "dunes",
-        "campo volcánico": "volcanic field",
+        "manantiales": "springs",
+        "hipersalinos": "hypersaline",
+        "fríos": "cold",
+        "continuo": "continuous",
+        "costero": "coastal",
+        "nitratos": "nitrates",
         "y": "and",
         "con": "with",
         "de": "of",
-        "Permafrost continuo y manantiales hipersalinos fríos": "Continuous permafrost and cold hypersaline springs",
     }
-    out = text
-    for es, en in replacements.items():
-        out = out.replace(es, en)
-    return out
+    for es, en in words.items():
+        out = re.sub(rf"\b{re.escape(es)}\b", en, out, flags=re.IGNORECASE)
+
+    return out[0].upper() + out[1:] if out else out
 
 
 @st.cache_data
@@ -75,15 +92,14 @@ def load_data():
         st.error("Master dataset not found. Please run `python etl/fetch_terrain_sar.py` first.")
         st.stop()
 
-    if "primary_geology" in df.columns:
-        df["primary_geology"] = df["primary_geology"].apply(translate_geology_to_en)
-
     with open(TARGETS_JSON, "r", encoding="utf-8") as f:
         targets_data = json.load(f)["targets"]
     return df, targets_data
 
 
 df_sites, targets = load_data()
+if "primary_geology" in df_sites.columns:
+    df_sites["primary_geology"] = df_sites["primary_geology"].apply(translate_geology_to_en)
 
 # --- SIDEBAR: MISSION CONFIGURATION ---
 st.sidebar.title("🛰️ Mission Control")
